@@ -1,5 +1,6 @@
 import csv
 import json
+import re
 
 from deep_translator import GoogleTranslator
 
@@ -17,7 +18,7 @@ except:
 
             i = 0
             for movie_or_rating in row:
-                movie_or_rating = movie_or_rating.strip()
+                movie_or_rating = re.sub(r'\s+', ' ', movie_or_rating.strip())
                 if movie_or_rating == '':
                     break
 
