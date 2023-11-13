@@ -119,7 +119,7 @@ def pearson_score(movies1: list[Movie], movies2: list[Movie]):
         rating_per_title[movie1.title] = movie1.rating
 
     for i, movie2 in enumerate(movies2):
-        title = movie2[0]
+        title = movie2.title
         if title in rating_per_title:
             rating_count += 1
             user1_movie_rating = rating_per_title[title]
