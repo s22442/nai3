@@ -2,9 +2,12 @@ import csv
 import json
 import numpy as np
 import re
+import requests
 import sys
 
 from deep_translator import GoogleTranslator
+
+OMDB_API_KEY = "xxx"
 
 
 class Movie:
@@ -13,7 +16,18 @@ class Movie:
         self.rating = rating
 
     def __str__(self):
-        return f"{self.title} - {self.rating}"
+        try:
+            description = requests.get(
+                f"https://www.omdbapi.com/?apikey={
+                    OMDB_API_KEY}&t={self.title}"
+            ).json().get("Plot")
+
+            if description == None:
+                raise Exception("Empty description")
+        except:
+            description = "Failed to fetch description from external API"
+
+        return f"{self.title} - {description}"
 
     def __repr__(self):
         return self.__str__()
