@@ -1,7 +1,7 @@
 import csv
 import json
-import re
 import numpy as np
+import re
 import sys
 
 from deep_translator import GoogleTranslator
@@ -58,7 +58,8 @@ def euclidean_score(movies_with_ratings_1, movies_with_ratings_2):
     for movie_and_rating in movies_with_ratings_2:
         movie = movie_and_rating[0]
         if movie in rating_per_movie:
-            squared_diff.append(np.square(movie_and_rating[1] - rating_per_movie[movie]))
+            squared_diff.append(
+                np.square(movie_and_rating[1] - rating_per_movie[movie]))
 
     if len(squared_diff) == 0:
         return 0
@@ -144,7 +145,20 @@ for index, user_movies_2 in enumerate(data):
     user_indexes_with_movies.append([index, user_movies_2])
 
 
-user_indexes_with_movies_to_recommend = sorted(user_indexes_with_movies, key=lambda index_and_movies: -user_scores[index_and_movies[0]])
-print(f"Recommended movies to watch for user {USER_INDEX}:", movies_proposition(user_indexes_with_movies_to_recommend))
-user_indexes_with_movies_to_not_recommend = sorted(user_indexes_with_movies, key=lambda index_and_movies: user_scores[index_and_movies[0]])
-print(f"Not recommended movies to watch for user {USER_INDEX}:", movies_proposition(user_indexes_with_movies_to_not_recommend))
+user_indexes_with_movies_to_recommend = sorted(
+    user_indexes_with_movies, key=lambda index_and_movies: -
+    user_scores[index_and_movies[0]]
+)
+print(
+    f"Recommended movies to watch for user {USER_INDEX}:",
+    movies_proposition(user_indexes_with_movies_to_recommend)
+)
+
+user_indexes_with_movies_to_not_recommend = sorted(
+    user_indexes_with_movies, key=lambda index_and_movies: user_scores[index_and_movies[0]]
+)
+
+print(
+    f"Not recommended movies to watch for user {USER_INDEX}:",
+    movies_proposition(user_indexes_with_movies_to_not_recommend)
+)
