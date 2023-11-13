@@ -152,14 +152,19 @@ user_movies = data[user_index]
 score_method_type = sys.argv[2].lower()
 
 
+match score_method_type:
+    case "pearson":
+        scoring_cb = pearson_score
+    case "euclidean":
+        scoring_cb = euclidean_score
+    case _:
+        raise Exception("Invalid score method type")
+
 for i, other_user_movies in enumerate(data):
     if i == user_index:
         user_scores.append(0)
     else:
-        if score_method_type == "pearson":
-            user_scores.append(pearson_score(user_movies, other_user_movies))
-        else:
-            user_scores.append(euclidean_score(user_movies, other_user_movies))
+        user_scores.append(scoring_cb(user_movies, other_user_movies))
 
 user_indexes_with_movies = []
 for index, user_movies_2 in enumerate(data):
