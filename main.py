@@ -190,6 +190,6 @@ user_indexes_with_movies_not_to_recommend = sorted(
 )
 
 print(f"Not recommended movies to watch for user {user_index}:")
-for movie in movies_proposition(user_indexes_with_movies_to_recommend):
+for movie in movies_proposition(user_indexes_with_movies_not_to_recommend):
     print(movie)
     print()
