@@ -144,19 +144,19 @@ for movie in user_movies:
 
 
 def movies_proposition(movies_sorted_by_score: list[list]):
-    movies_to_recommend = []
+    selected_movies = []
 
     for user_index_and_movies in movies_sorted_by_score:
         for movie in user_index_and_movies[1]:
             if movie.title not in user_movie_titles_set and movie.rating >= GOOD_SCORE_THRESHOLD:
-                movies_to_recommend.append(movie.title)
-            if len(movies_to_recommend) == NUMBER_OF_PROPOSED_MOVIES:
+                selected_movies.append(movie)
+            if len(selected_movies) == NUMBER_OF_PROPOSED_MOVIES:
                 break
 
-        if len(movies_to_recommend) == NUMBER_OF_PROPOSED_MOVIES:
+        if len(selected_movies) == NUMBER_OF_PROPOSED_MOVIES:
             break
 
-    return movies_to_recommend
+    return selected_movies
 
 
 for i, other_user_movies in enumerate(data):
@@ -178,17 +178,18 @@ user_indexes_with_movies_to_recommend = sorted(
     key=lambda index_and_movies: -user_scores[index_and_movies[0]]
 )
 
-print(
-    f"Recommended movies to watch for user {user_index}:",
-    movies_proposition(user_indexes_with_movies_to_recommend)
-)
+print(f"Recommended movies to watch for user {user_index}:")
+for movie in movies_proposition(user_indexes_with_movies_to_recommend):
+    print(movie)
+    print()
+
 
 user_indexes_with_movies_not_to_recommend = sorted(
     user_indexes_with_movies,
     key=lambda index_and_movies: user_scores[index_and_movies[0]]
 )
 
-print(
-    f"Not recommended movies to watch for user {user_index}:",
-    movies_proposition(user_indexes_with_movies_not_to_recommend)
-)
+print(f"Not recommended movies to watch for user {user_index}:")
+for movie in movies_proposition(user_indexes_with_movies_to_recommend):
+    print(movie)
+    print()
