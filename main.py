@@ -6,12 +6,24 @@ import sys
 
 from deep_translator import GoogleTranslator
 
-USER_INDEX = 11
+
+class Movie:
+    def __init__(self, title, rating):
+        self.title = title
+        self.rating = rating
+
+    def __str__(self):
+        return f"{self.title} - {self.rating}"
+
+    def __repr__(self):
+        return self.__str__()
+
 
 GOOD_SCORE_THRESHOLD = 8
 NUMBER_OF_PROPOSED_MOVIES = 5
 
 translator = GoogleTranslator(source='auto', target='en')
+
 
 try:
     with open('cache.json') as jsonfile:
@@ -46,29 +58,41 @@ except:
         with open('cache.json', 'w') as jsonfile:
             json.dump(data, jsonfile)
 
+data = [
+    [
+        Movie(
+            movie_and_rating[0],
+            movie_and_rating[1]
+        )
+        for movie_and_rating in user_movies
+    ] for user_movies in data
+]
 
-def euclidean_score(movies_with_ratings_1, movies_with_ratings_2):
-    squared_diff = []
 
-    rating_per_movie = {}
+def euclidean_score(movies1: list[Movie], movies2: list[Movie]):
+    squared_diffs = []
 
-    for movie_and_rating in movies_with_ratings_1:
-        rating_per_movie[movie_and_rating[0]] = movie_and_rating[1]
+    rating_per_title = {}
 
-    for movie_and_rating in movies_with_ratings_2:
-        movie = movie_and_rating[0]
-        if movie in rating_per_movie:
-            squared_diff.append(
-                np.square(movie_and_rating[1] - rating_per_movie[movie]))
+    for movie1 in movies1:
+        rating_per_title[movie1.title] = movie1.rating
 
-    if len(squared_diff) == 0:
+    for movie2 in movies2:
+        title = movie2.title
+        if title in rating_per_title:
+            squared_diffs.append(
+                np.square(movie2.rating - rating_per_title[title])
+            )
+
+    if len(squared_diffs) == 0:
         return 0
-    return 1.0 / (1.0 + np.sqrt(np.sum(squared_diff)))
+
+    return 1.0 / (1.0 + np.sqrt(np.sum(squared_diffs)))
 
 
-def pearson_score(movies_with_ratings_1, movies_with_ratings_2):
-    rating_per_movie = {}
-    num_ratings = 0
+def pearson_score(movies1: list[Movie], movies2: list[Movie]):
+    rating_per_title = {}
+    rating_count = 0
     user1_sum = 0
     user2_sum = 0
 
@@ -77,15 +101,15 @@ def pearson_score(movies_with_ratings_1, movies_with_ratings_2):
 
     sum_of_products = 0
 
-    for movie_and_rating in movies_with_ratings_1:
-        rating_per_movie[movie_and_rating[0]] = movie_and_rating[1]
+    for movie1 in movies1:
+        rating_per_title[movie1.title] = movie1.rating
 
-    for j, movie_and_rating in enumerate(movies_with_ratings_2):
-        movie = movie_and_rating[0]
-        if movie in rating_per_movie:
-            num_ratings += 1
-            user1_movie_rating = rating_per_movie[movie]
-            user2_movie_rating = movies_with_ratings_2[j][1]
+    for i, movie2 in enumerate(movies2):
+        title = movie2[0]
+        if title in rating_per_title:
+            rating_count += 1
+            user1_movie_rating = rating_per_title[title]
+            user2_movie_rating = movies2[i].rating
 
             user1_sum += user1_movie_rating
             user2_sum += user2_movie_rating
@@ -95,44 +119,48 @@ def pearson_score(movies_with_ratings_1, movies_with_ratings_2):
 
             sum_of_products += user1_movie_rating * user2_movie_rating
 
-    if num_ratings == 0:
+    if rating_count == 0:
         return 0
 
-    Sxy = sum_of_products - (user1_sum * user2_sum / num_ratings)
-    Sxx = user1_squared_sum - np.square(user1_sum) / num_ratings
-    Syy = user2_squared_sum - np.square(user2_sum) / num_ratings
+    sxy = sum_of_products - (user1_sum * user2_sum / rating_count)
+    sxx = user1_squared_sum - np.square(user1_sum) / rating_count
+    syy = user2_squared_sum - np.square(user2_sum) / rating_count
 
-    if Sxx * Syy == 0:
+    if sxx * syy == 0:
         return 0
 
-    return Sxy / np.sqrt(Sxx * Syy)
+    return sxy / np.sqrt(sxx * syy)
 
 
-def movies_proposition(movies_sorted_by_user_score):
+user_index = int(sys.argv[1].strip())
+user_scores = []
+user_movies = data[user_index]
+score_method_type = sys.argv[2].lower()
+
+user_movie_titles_set = set()
+
+for movie in user_movies:
+    user_movie_titles_set.add(movie.title)
+
+
+def movies_proposition(movies_sorted_by_score: list[list]):
     movies_to_recommend = []
-    user_movies_set = set()
 
-    for user_movie_and_rating in user_movies:
-        user_movies_set.add(user_movie_and_rating[0])
-
-    for user_index_and_movies in movies_sorted_by_user_score:
-        for movie_and_rating in user_index_and_movies[1]:
-            if movie_and_rating[0] not in user_movies_set and movie_and_rating[1] >= GOOD_SCORE_THRESHOLD:
-                movies_to_recommend.append(movie_and_rating[0])
+    for user_index_and_movies in movies_sorted_by_score:
+        for movie in user_index_and_movies[1]:
+            if movie.title not in user_movie_titles_set and movie.rating >= GOOD_SCORE_THRESHOLD:
+                movies_to_recommend.append(movie.title)
             if len(movies_to_recommend) == NUMBER_OF_PROPOSED_MOVIES:
                 break
+
         if len(movies_to_recommend) == NUMBER_OF_PROPOSED_MOVIES:
             break
 
     return movies_to_recommend
 
 
-user_scores = []
-user_movies = data[USER_INDEX]
-score_method_type = sys.argv[1].lower()
-
 for i, other_user_movies in enumerate(data):
-    if i == USER_INDEX:
+    if i == user_index:
         user_scores.append(0)
     else:
         if score_method_type == "pearson":
@@ -146,19 +174,21 @@ for index, user_movies_2 in enumerate(data):
 
 
 user_indexes_with_movies_to_recommend = sorted(
-    user_indexes_with_movies, key=lambda index_and_movies: -
-    user_scores[index_and_movies[0]]
+    user_indexes_with_movies,
+    key=lambda index_and_movies: -user_scores[index_and_movies[0]]
 )
+
 print(
-    f"Recommended movies to watch for user {USER_INDEX}:",
+    f"Recommended movies to watch for user {user_index}:",
     movies_proposition(user_indexes_with_movies_to_recommend)
 )
 
-user_indexes_with_movies_to_not_recommend = sorted(
-    user_indexes_with_movies, key=lambda index_and_movies: user_scores[index_and_movies[0]]
+user_indexes_with_movies_not_to_recommend = sorted(
+    user_indexes_with_movies,
+    key=lambda index_and_movies: user_scores[index_and_movies[0]]
 )
 
 print(
-    f"Not recommended movies to watch for user {USER_INDEX}:",
-    movies_proposition(user_indexes_with_movies_to_not_recommend)
+    f"Not recommended movies to watch for user {user_index}:",
+    movies_proposition(user_indexes_with_movies_not_to_recommend)
 )
