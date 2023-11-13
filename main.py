@@ -151,27 +151,6 @@ user_scores = []
 user_movies = data[user_index]
 score_method_type = sys.argv[2].lower()
 
-user_movie_titles_set = set()
-
-for movie in user_movies:
-    user_movie_titles_set.add(movie.title)
-
-
-def movies_proposition(movies_sorted_by_score: list[list]):
-    selected_movies = []
-
-    for user_index_and_movies in movies_sorted_by_score:
-        for movie in user_index_and_movies[1]:
-            if movie.title not in user_movie_titles_set and movie.rating >= GOOD_SCORE_THRESHOLD:
-                selected_movies.append(movie)
-            if len(selected_movies) == NUMBER_OF_PROPOSED_MOVIES:
-                break
-
-        if len(selected_movies) == NUMBER_OF_PROPOSED_MOVIES:
-            break
-
-    return selected_movies
-
 
 for i, other_user_movies in enumerate(data):
     if i == user_index:
@@ -187,23 +166,55 @@ for index, user_movies_2 in enumerate(data):
     user_indexes_with_movies.append([index, user_movies_2])
 
 
-user_indexes_with_movies_to_recommend = sorted(
-    user_indexes_with_movies,
-    key=lambda index_and_movies: -user_scores[index_and_movies[0]]
+def flatten(l):
+    return [item for sublist in l for item in sublist]
+
+
+def generate_movie_proposition(movies: list[Movie], banned_movies: set[str]):
+    selected_movies = []
+
+    for movie in movies:
+        if movie.title not in banned_movies and movie.rating >= GOOD_SCORE_THRESHOLD:
+            selected_movies.append(movie)
+        if len(selected_movies) == NUMBER_OF_PROPOSED_MOVIES:
+            break
+
+    return selected_movies
+
+
+banned_movies = set()
+for movie in user_movies:
+    banned_movies.add(movie.title)
+
+
+movies_ordered_by_relevance_desc = flatten([
+    index_and_movies[1] for index_and_movies in sorted(
+        user_indexes_with_movies,
+        key=lambda index_and_movies: -user_scores[index_and_movies[0]]
+    )
+])
+
+recommended_movies = generate_movie_proposition(
+    movies_ordered_by_relevance_desc, banned_movies
 )
 
 print(f"Recommended movies to watch for user {user_index}:")
-for movie in movies_proposition(user_indexes_with_movies_to_recommend):
+for movie in recommended_movies:
     print(movie)
     print()
 
+for already_recommended_movie in recommended_movies:
+    banned_movies.add(already_recommended_movie.title)
 
-user_indexes_with_movies_not_to_recommend = sorted(
-    user_indexes_with_movies,
-    key=lambda index_and_movies: user_scores[index_and_movies[0]]
-)
+
+movies_ordered_by_relevence_asc = flatten([
+    index_and_movies[1] for index_and_movies in sorted(
+        user_indexes_with_movies,
+        key=lambda index_and_movies: user_scores[index_and_movies[0]]
+    )
+])
 
 print(f"Not recommended movies to watch for user {user_index}:")
-for movie in movies_proposition(user_indexes_with_movies_not_to_recommend):
+for movie in generate_movie_proposition(movies_ordered_by_relevence_asc, banned_movies):
     print(movie)
     print()
